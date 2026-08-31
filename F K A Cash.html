@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة ماليات الحضانة الذكية</title>
+    
+    <!-- مكتبات قواعد بيانات جوجل (Firebase) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <style>
+        :root {
+            --primary: #3498db; --success: #2ecc71; --danger: #e74c3c;
+            --warning: #f39c12; --dark: #2c3e50; --light: #f8f9fa;
+            --purple: #9b59b6; --info: #16a085; --uniform: #e67e22;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #eef2f5; margin: 0; padding: 10px; color: #333; padding-bottom: 30px; }
+        
+        .login-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: var(--dark); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .login-box { background: #fff; padding: 30px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        .login-box input { margin-bottom: 15px; text-align: center; }
+
+        .header-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 12px; margin-bottom: 8px; }
+        .menu-btn, .search-btn { background: #fff; border-radius: 50%; width: 38px; height: 38px; font-size: 16px; cursor: pointer; color: var(--dark); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee; transition: 0.2s; }
+        .menu-btn:hover, .search-btn:hover { background: var(--primary); color: #fff; }
+
+        .side-menu { position: fixed; right: -280px; top: 0; width: 260px; height: 100%; background: #fff; box-shadow: -2px 0 10px rgba(0,0,0,0.2); transition: right 0.3s ease; z-index: 1001; padding-top: 60px; }
+        .side-menu.open { right: 0; }
+        .side-menu a { display: flex; align-items: center; gap: 10px; padding: 15px 20px; font-size: 16px; color: var(--dark); text-decoration: none; border-bottom: 1px solid #f1f1f1; font-weight: bold; transition: 0.2s; }
+        .side-menu a:hover { background-color: #f8f9fa; color: var(--primary); }
+        .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1000; }
+
+        .app-header { position: relative; text-align: center; margin: 10px 0 15px; padding-bottom: 22px; border-bottom: 2px dashed #ddd; }
+        @keyframes glowing-text { 0% { color: #e74c3c; text-shadow: 0 0 5px rgba(231,76,60,0.5); } 25% { color: #f39c12; text-shadow: 0 0 5px rgba(243,156,18,0.5); } 50% { color: #3498db; text-shadow: 0 0 5px rgba(52,152,219,0.5); } 75% { color: #9b59b6; text-shadow: 0 0 5px rgba(155,89,182,0.5); } 100% { color: #2ecc71; text-shadow: 0 0 5px rgba(46,204,113,0.5); } }
+        .animated-title { font-size: 28px; font-weight: 900; margin: 0; text-transform: uppercase; font-family: 'Arial Black', Impact, sans-serif; animation: glowing-text 5s infinite alternate; letter-spacing: 1px; }
+        .main-subtitle { color: var(--dark); font-size: 15px; font-weight: bold; margin-top: 5px; }
+        .developer-credit { position: absolute; left: 5px; bottom: 2px; font-size: 11px; font-family: 'Segoe UI', Tahoma, sans-serif; font-weight: bold; direction: ltr; animation: glowing-text 4s infinite alternate-reverse; }
+        
+        .month-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        .month-bar h3 { margin: 0; font-size: 16px; color: var(--primary); font-weight: bold; }
+        .month-btn { background: var(--dark); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
+        .month-btn-add { background: var(--success); }
+        .sync-indicator { font-size: 10px; color: #2ecc71; display: block; text-align: center; margin-top: 5px; }
+
+        .dashboard { display: flex; gap: 8px; margin-bottom: 20px; }
+        .card { flex: 1; background: #fff; padding: 12px 5px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .card h3 { margin: 0; font-size: 13px; color: #777; }
+        .card p { margin: 8px 0 0; font-size: 15px; font-weight: bold; }
+        .text-success { color: var(--success); } .text-danger { color: var(--danger); } .text-primary { color: var(--primary); }
+        
+        .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .action-btn { background: #fff; border: none; padding: 15px 10px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); font-size: 15px; font-weight: bold; display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; transition: 0.1s; }
+        .action-btn:active { transform: scale(0.96); }
+        .icon { font-size: 28px; }
+        .btn-child { color: var(--primary); border-bottom: 3px solid var(--primary); } .btn-bus { color: var(--warning); border-bottom: 3px solid var(--warning); } .btn-consumable { color: var(--danger); border-bottom: 3px solid var(--danger); } .btn-general { color: var(--purple); border-bottom: 3px solid var(--purple); } .btn-book { color: var(--info); border-bottom: 3px solid var(--info); } .btn-uniform { color: var(--uniform); border-bottom: 3px solid var(--uniform); }
+
+        .top-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; background: #fff; padding: 10px 15px; border-radius: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .back-btn { background: var(--dark); color: #fff; border: none; padding: 8px 15px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 14px; }
+        .section-title { margin: 0; font-size: 18px; color: var(--dark); }
+        .add-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; margin-bottom: 20px; font-size: 16px; font-weight: bold; cursor: pointer; color: #fff; background-color: var(--primary); }
+
+        .section-notes-container { background: #fff; padding: 15px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .section-notes-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .section-notes-textarea { width: 100%; min-height: 80px; padding: 10px; border: 1px solid #ddd; border-radius: 8px; resize: vertical; font-family: inherit; font-size: 14px; background-color: #fcfcfc; box-sizing: border-box; }
+        .section-notes-textarea:focus { outline: none; border-color: var(--primary); background-color: #fff; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+        .modal-content { background: #fff; width: 90%; max-width: 400px; max-height: 90vh; overflow-y: auto; padding: 20px; border-radius: 15px; position: relative; box-shadow: 0 10px 20px rgba(0,0,0,0.2); box-sizing: border-box; display: flex; flex-direction: column; }
+        .close { position: absolute; left: 20px; top: 15px; color: #aaa; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .form-group { margin-bottom: 15px; } label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 13px; color: #555; }
+        input, select, textarea.form-textarea { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 15px; font-family: inherit; background-color: #f9f9f9; }
+        textarea.form-textarea { resize: vertical; min-height: 80px; }
+        .input-with-mic { display: flex; gap: 5px; }
+        .mic-btn { background: #eef2f5; border: 1px solid #ddd; border-radius: 8px; font-size: 20px; cursor: pointer; padding: 0 15px; transition: 0.3s; display: flex; align-items: center; justify-content: center; }
+        .mic-btn.recording { background: #ffcccc; border-color: var(--danger); animation: pulse 1s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+        button.submit-btn { width: 100%; padding: 14px; border: none; border-radius: 8px; margin-top: 10px; font-size: 16px; font-weight: bold; cursor: pointer; color: #fff; background-color: var(--primary); }
+        .btn-danger-outline { background: none; border: 2px solid var(--danger); color: var(--danger); padding: 12px; width: 100%; border-radius: 8px; margin-top: 10px; font-weight: bold; font-size: 15px;}
+        
+        .history-controls { display: flex; gap: 8px; }
+        .history-btn { background: #f8f9fa; border: 1px solid #ddd; border-radius: 8px; padding: 5px 12px; font-size: 16px; cursor: pointer; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .history-btn:disabled { opacity: 0.3; cursor: not-allowed; box-shadow: none; }
+        .transaction-list { background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .transaction-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
+        .transaction-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid #eee; cursor: pointer; border-radius: 8px; transition: 0.2s; }
+        .transaction-item:hover { background-color: #f8f9fa; } .transaction-item:last-child { border-bottom: none; }
+        .transaction-info h4 { margin: 0 0 5px; font-size: 15px; color: #222; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; }
+        .transaction-info p { margin: 0; font-size: 12px; color: #777; line-height: 1.4; }
+        .transaction-amount { font-weight: bold; font-size: 15px; white-space: nowrap; }
+        .bus-tag { background: #555; color: #fff; padding: 2px 6px; border-radius: 6px; font-size: 10px; }
+        .section-badge { color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: normal; }
+        
+        #search-input { width: 100%; padding: 15px; font-size: 16px; font-weight: bold; border: 2px solid var(--primary); border-radius: 10px; margin-bottom: 15px; box-sizing: border-box; outline: none; background: #fff; }
+        .log-item { background: #fdfdfd; padding: 10px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 10px; text-align: right; }
+        .log-time { font-size: 11px; color: #999; display: block; margin-bottom: 4px; }
+        .log-title { font-size: 14px; font-weight: bold; color: #333; margin: 0 0 5px 0; }
+        .log-action-badge { padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #fff; margin-right: 5px; }
+        .log-add { background: var(--success); } .log-edit { background: var(--warning); } .log-delete { background: var(--danger); } .log-undo { background: var(--purple); } .log-redo { background: var(--info); }
+        .export-section { margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 10px; border: 1px solid #eee; }
+        .export-section h4 { margin: 0 0 10px 0; font-size: 14px; color: #333; text-align: right; }
+        .export-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .btn-export { padding: 10px; border-radius: 8px; border: none; font-weight: bold; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px; color: white; }
+        .btn-pdf { background-color: #e74c3c; } .btn-excel { background-color: #27ae60; } .btn-notes { background-color: #f39c12; } .btn-json { background-color: #34495e; grid-column: span 2; }
+        .btn-import { background-color: var(--primary); color: white; padding: 12px; width: 100%; border-radius: 8px; border: none; font-weight: bold; font-size: 15px; cursor: pointer; margin-top: 10px; }
+
+        .hidden { display: none !important; }
+        #print-area { display: none; }
+        @media print { body * { visibility: hidden; } #print-area, #print-area * { visibility: visible; } #print-area { display: block; position: absolute; left: 0; top: 0; width: 100%; background: #fff; direction: rtl; padding: 10px; } * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen" class="login-container">
+        <div class="login-box">
+            <h1 class="animated-title" style="font-size: 22px; margin-bottom: 5px;">Future Kids Academy</h1>
+            <p style="color: #7f8c8d; font-size: 13px; font-weight: bold; margin-bottom: 20px;">نظام إدارة الماليات الذكي</p>
+            <div class="form-group"><input type="text" id="login-username" placeholder="اسم المستخدم (User)"></div>
+            <div class="form-group"><input type="password" id="login-password" placeholder="كلمة المرور (Password)"></div>
+            <button class="submit-btn" onclick="checkLogin()">تسجيل الدخول</button>
+            <p id="login-error" style="color: var(--danger); font-size: 13px; display: none; margin-top: 15px; font-weight: bold;">البيانات غير صحيحة!</p>
+        </div>
+    </div>
+
+    <div id="print-area"></div>
+
+    <div class="menu-overlay" id="menu-overlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="side-menu">
+        <a href="#" onclick="toggleMenu(); openLogModal()">📋 سجل نشاطات البرنامج</a>
+        <a href="#" onclick="toggleMenu(); openBackupModal()">📊 التقارير والنسخ الاحتياطي</a>
+        <a href="#" onclick="toggleMenu(); openSettingsModal()">⚙️ إعدادات البرنامج</a>
+        <a href="#" onclick="logout()" style="color: var(--danger); margin-top: 20px;">🚪 تسجيل الخروج</a>
+    </div>
+
+    <div id="home-screen" class="hidden">
+        <header class="app-header">
+            <div class="header-controls">
+                <div class="search-btn" onclick="openSearchModal()" title="البحث الشامل">🔍</div>
+                <div class="menu-btn" onclick="toggleMenu()" title="القائمة">☰</div>
+            </div>
+            <h1 class="animated-title">Future Kids Academy</h1>
+            <div class="main-subtitle">نظام إدارة الماليات الذكي</div>
+            <span class="developer-credit animated-credit">made by Eng / Fareed Mohamed</span>
+        </header>
+
+        <div class="month-bar">
+            <button class="month-btn" onclick="openMonthsModal()">📅 الأرشيف</button>
+            <div>
+                <h3 id="current-month-display">الشهر الحالي</h3>
+                <span class="sync-indicator" id="sync-status">⏳ جاري الاتصال...</span>
+            </div>
+            <button class="month-btn month-btn-add" onclick="createNewMonth()">➕ شهر جديد</button>
+        </div>
+
+        <div class="dashboard">
+            <div class="card"><h3>إجمالي الإيرادات</h3><p id="overall-income" class="text-success">0 ج.م</p></div>
+            <div class="card"><h3>إجمالي المصروفات</h3><p id="overall-expense" class="text-danger">0 ج.م</p></div>
+            <div class="card"><h3>الصافي العام</h3><p id="overall-net" class="text-primary">0 ج.م</p></div>
+        </div>
+        
+        <div class="quick-actions">
+            <button class="action-btn btn-child" onclick="openSection('child')"><span class="icon">👨‍🎓</span> حسابات الأطفال</button>
+            <button class="action-btn btn-bus" onclick="openSection('bus')"><span class="icon">🚌</span> حسابات الباص</button>
+            <button class="action-btn btn-consumable" onclick="openSection('consumable')"><span class="icon">🛠️</span> استهلاكات وصيانة</button>
+            <button class="action-btn btn-general" onclick="openSection('general')"><span class="icon">⚙️</span> مصروفات عامة</button>
+            <button class="action-btn btn-book" onclick="openSection('book')"><span class="icon">📚</span> الكتب والأدوات</button>
+            <button class="action-btn btn-uniform" onclick="openSection('uniform')"><span class="icon">👕</span> الزي المدرسي</button>
+        </div>
+        
+        <div class="transaction-list">
+            <div class="transaction-header">
+                <h3 style="margin:0; font-size:16px;">أحدث حركات الشهر المفتوح</h3>
+                <div class="history-controls">
+                    <button id="btn-undo-home" class="history-btn" onclick="undo()" title="تراجع خطوة">↩️</button>
+                    <button id="btn-redo-home" class="history-btn" onclick="redo()" title="إعادة خطوة">↪️</button>
+                </div>
+            </div>
+            <div id="overall-list"></div>
+        </div>
+    </div>
+
+    <div id="section-screen" class="hidden">
+        <div class="top-nav">
+            <button class="back-btn" onclick="goHome()">❮ رجوع للرئيسية</button>
+            <h3 class="section-title" id="section-title">اسم القسم</h3>
+        </div>
+        <div class="dashboard">
+            <div class="card"><h3>إيرادات القسم</h3><p id="section-income" class="text-success">0 ج.م</p></div>
+            <div class="card"><h3>مصروفات القسم</h3><p id="section-expense" class="text-danger">0 ج.م</p></div>
+            <div class="card"><h3>صافي القسم</h3><p id="section-net" class="text-primary">0 ج.م</p></div>
+        </div>
+
+        <div class="section-notes-container">
+            <div class="section-notes-header">
+                <h4 style="margin:0; font-size:14px; color:#555;">📝 ملاحظات القسم</h4>
+                <button type="button" class="mic-btn" style="padding:2px 10px; font-size:16px; border:none;" id="mic-section-general-notes" onclick="startVoiceRecognition('section-general-notes')">🎤</button>
+            </div>
+            <textarea id="section-general-notes" class="section-notes-textarea" placeholder="اكتب هنا الملاحظات أو التنبيهات..."></textarea>
+        </div>
+
+        <button class="add-btn" id="add-new-btn" onclick="openEntryModal()">➕ إضافة حركة مالية جديدة</button>
+        
+        <div class="transaction-list">
+            <div class="transaction-header">
+                <h3 id="section-list-title" style="margin:0; font-size:16px;">سجل حركات القسم</h3>
+                <div class="history-controls">
+                    <button id="btn-undo-section" class="history-btn" onclick="undo()" title="تراجع خطوة">↩️</button>
+                    <button id="btn-redo-section" class="history-btn" onclick="redo()" title="إعادة خطوة">↪️</button>
+                </div>
+            </div>
+            <div id="section-list"></div>
+        </div>
+    </div>
+
+    <!-- النوافذ المنبثقة المتعددة -->
+    <div id="main-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('main-modal')">&times;</span>
+            <h3 id="modal-title" style="margin-top:0; color:var(--dark);">إضافة عملية</h3>
+            <form id="finance-form">
+                <input type="hidden" id="entry-id">
+                <div class="form-group"><label>نوع الحركة</label><select id="type" onchange="populateCategories()"></select></div>
+                <div class="form-group"><label>البند</label><select id="category"></select></div>
+                <div class="form-group" id="bus-select-group" style="display: none;">
+                    <label>تحديد الباص</label>
+                    <select id="bus-id"><option value="باص 1">باص 1</option><option value="باص 2">باص 2</option><option value="باص 3">باص 3</option><option value="باص 4">باص 4</option></select>
+                </div>
+                <div class="form-group"><label>المبلغ (ج.م)</label><input type="number" id="amount" required placeholder="أدخل المبلغ..."></div>
+                <div class="form-group">
+                    <label id="details-label">التفاصيل / الاسم</label>
+                    <div class="input-with-mic"><input type="text" id="details" required placeholder="أدخل التفاصيل هنا..."><button type="button" class="mic-btn" id="mic-details" onclick="startVoiceRecognition('details')">🎤</button></div>
+                </div>
+                <div class="form-group"><label>التاريخ</label><input type="date" id="date" required></div>
+                <div class="form-group">
+                    <label>ملاحظات إضافية (اختياري)</label>
+                    <div class="input-with-mic" style="align-items: stretch;"><textarea id="notes" class="form-textarea" placeholder="اكتب ملاحظاتك..."></textarea><button type="button" class="mic-btn" id="mic-notes" onclick="startVoiceRecognition('notes')">🎤</button></div>
+                </div>
+                <button type="submit" class="submit-btn" id="save-btn">حفظ العملية</button>
+                <button type="button" class="btn-danger-outline" id="delete-btn" style="display: none;" onclick="deleteTransaction()">حذف هذه العملية</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="search-modal" class="modal">
+        <div class="modal-content" style="max-height: 90vh; display: flex; flex-direction: column;">
+            <span class="close" onclick="closeModal('search-modal')">&times;</span>
+            <h3 style="margin-top:0; color:var(--dark);">🔍 البحث الشامل</h3>
+            <input type="text" id="search-input" placeholder="ابحث بالاسم، المبلغ، التاريخ، البند، التفاصيل..." onkeyup="performSearch()">
+            <div id="search-results" style="overflow-y: auto; flex: 1; padding-right: 5px;"><p style="text-align:center; color:#999;">اكتب أي شيء للبحث في جميع الدفاتر...</p></div>
+        </div>
+    </div>
+
+    <div id="activity-modal" class="modal">
+        <div class="modal-content" style="max-height: 80vh; overflow-y: hidden; display: flex; flex-direction: column;">
+            <span class="close" onclick="closeModal('activity-modal')">&times;</span>
+            <h3 style="margin-top:0; color:var(--dark);">📋 سجل النشاطات الكامل</h3>
+            <div id="activity-list" style="overflow-y: auto; flex: 1; padding-right: 5px;"></div>
+        </div>
+    </div>
+
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('settings-modal')">&times;</span>
+            <h3 style="margin-top:0; color:var(--dark);">⚙️ إعدادات البرنامج</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 10px; border: 1px solid #ddd; margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: var(--primary);">تغيير بيانات الدخول</h4>
+                <div class="form-group"><label>اسم المستخدم الجديد</label><input type="text" id="setting-new-user" placeholder="أدخل اسم المستخدم..."></div>
+                <div class="form-group"><label>كلمة المرور الجديدة</label><input type="password" id="setting-new-pass" placeholder="أدخل كلمة المرور..."></div>
+                <button class="submit-btn" onclick="saveSettings()">حفظ الإعدادات</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="months-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal('months-modal')">&times;</span>
+            <h3 style="margin-top:0; color:var(--dark);">📅 أرشيف الأشهر</h3>
+            <div id="months-list" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
+    </div>
+
+    <div id="backup-modal" class="modal">
+        <div class="modal-content" style="text-align: center;">
+            <span class="close" onclick="closeModal('backup-modal')">&times;</span>
+            <h3 style="margin-top:0; color:var(--dark);">📊 مركز التقارير والأمان</h3>
+            <div class="export-section">
+                <h4>📄 استخراج تقرير (للقراءة والمشاركة)</h4>
+                <div class="export-grid">
+                    <button class="btn-export btn-pdf" onclick="exportPDF()">📋 تقرير PDF</button>
+                    <button class="btn-export btn-excel" onclick="exportExcel()">📊 ملف Excel</button>
+                    <button class="btn-export btn-notes" onclick="exportNotes()" style="grid-column: span 2;">📝 حفظ كـ Notes (نصي)</button>
+                </div>
+            </div>
+            <div class="export-section">
+                <h4>🔄 النسخ الاحتياطي الشامل لجميع الأشهر</h4>
+                <button class="btn-export btn-json" onclick="exportJSON()">⬇️ حفظ نسخة احتياطية (JSON)</button>
+                <div style="margin: 15px 0; border-bottom: 1px dashed #ccc;"></div>
+                <h4 style="color: #e74c3c;">استرجاع البيانات من نسخة سابقة:</h4>
+                <input type="file" id="import-file" accept=".json" style="margin-bottom: 10px; padding: 5px;">
+                <button class="btn-import" onclick="importJSON()">🔄 استرجاع البيانات الآن</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- البرمجة -->
+    <script>
+        // ================= تهيئة Firebase =================
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAsQuny3_PkeGPgvNCyFlOYWKYiABHjjc",
+            authDomain: "fka-cash.firebaseapp.com",
+            databaseURL: "https://fka-cash-default-rtdb.firebaseio.com", // 🟢 تم إضافة الرابط هنا
+            projectId: "fka-cash",
+            storageBucket: "fka-cash.firebasestorage.app",
+            messagingSenderId: "643159973835",
+            appId: "1:643159973835:web:7664d62a7e33463ac4e04e",
+            measurementId: "G-C6D24L7XY9"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        // ================= المتغيرات والأقسام =================
+        let appData = { months: [], activeMonthId: null, transactions: {}, sectionNotes: {}, activityLog: [] };
+        let currentActiveSection = null;
+        let credentials = JSON.parse(localStorage.getItem('nursery_credentials_v1')) || { user: 'asho', pass: 'asho' };
+        
+        const sectionsConfig = {
+            child: { title: "👨‍🎓 حسابات الأطفال", types: [{val: "income", text: "إيراد (قبض)"}, {val: "expense", text: "مصروف"}], categories: { income: ["اشتراك شهري", "رسوم فتح ملف", "استضافة مسائية", "رسوم أنشطة ورحلات", "أخرى"], expense: ["هدايا وجوائز", "رد رسوم", "أخرى"] }, showBus: false, detailsLabel: "اسم الطفل / تفاصيل" },
+            bus: { title: "🚌 حسابات الباصات", types: [ {val: "income", text: "إيرادات للباص"}, {val: "expense_monthly", text: "مصروفات شهرية (بنزين/رواتب)"}, {val: "expense_maintenance", text: "صيانة وتصليح"} ], categories: { income: ["اشتراك باص شهري", "إيراد رحلة", "أخرى"], expense_monthly: ["بنزين / سولار", "راتب السائق", "راتب المشرفة", "غسيل وتجديدات"], expense_maintenance: ["صيانة ميكانيكا", "تغيير زيت وفلاتر", "كاوتش وبطارية", "تصليحات طارئة"], expense: ["مصروفات عامة"] }, showBus: true, detailsLabel: "البيان" },
+            consumable: { title: "🛠️ الاستهلاكات والصيانة", types: [{val: "expense", text: "مصروف"}], categories: { expense: ["أدوات نظافة ومطهرات", "صيانة مرافق", "أدوات تعليمية", "ضيافة وبوفيه", "مستلزمات طبية", "نثريات"] }, showBus: false, detailsLabel: "التفاصيل" },
+            general: { title: "⚙️ مصروفات عامة", types: [{val: "expense", text: "مصروف"}, {val: "income", text: "إيراد عام"}], categories: { income: ["إيرادات متنوعة", "دعم خارجي"], expense: ["إيجار المقر", "فواتير مرافق", "رواتب المعلمات", "رواتب الإدارة", "تسويق", "تأسيس"] }, showBus: false, detailsLabel: "البيان / المستفيد" },
+            book: { title: "📚 الكتب والأدوات", types: [{val: "income", text: "مبيعات للطلاب"}, {val: "expense", text: "شراء من المورد"}], categories: { income: ["مبيعات كتب ومناهج", "مبيعات أدوات مدرسية", "سجل المتابعة", "أخرى"], expense: ["شراء كتب", "شراء أدوات", "شراء سجل المتابعة", "أخرى"] }, showBus: false, detailsLabel: "التفاصيل" },
+            uniform: { title: "👕 الزي المدرسي", types: [{val: "expense", text: "شراء من المصنع"}, {val: "income", text: "مبيعات للأطفال"}], categories: { expense: ["شراء زي", "طباعة وتطريز", "شحن ونقل"], income: ["بيع طقم كامل", "بيع تيشرت", "بيع بنطلون", "أخرى"] }, showBus: false, detailsLabel: "التفاصيل" }
+        };
+        const badgeColors = { child: 'var(--primary)', bus: 'var(--warning)', consumable: 'var(--danger)', general: 'var(--purple)', book: 'var(--info)', uniform: 'var(--uniform)' };
+        const badgeNames = { child: 'الاطفال', bus: 'الباصات', consumable: 'الاستهلاكات', general: 'عام', book: 'الكتب', uniform: 'الزي' };
+
+        const form = document.getElementById('finance-form');
+
+        // ================= الدخول والمزامنة =================
+        window.onload = function() {
+            if(sessionStorage.getItem('nursery_logged_in') === 'true') {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('home-screen').classList.remove('hidden');
+                initApp();
+            }
+        };
+
+        function checkLogin() {
+            const user = document.getElementById('login-username').value.trim();
+            const pass = document.getElementById('login-password').value.trim();
+            if(user === credentials.user && pass === credentials.pass) {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('home-screen').classList.remove('hidden');
+                sessionStorage.setItem('nursery_logged_in', 'true');
+                initApp();
+            } else { document.getElementById('login-error').style.display = 'block'; }
+        }
+
+        function logout() { sessionStorage.removeItem('nursery_logged_in'); window.location.reload(); }
+
+        function openSettingsModal() { document.getElementById('setting-new-user').value = credentials.user; document.getElementById('setting-new-pass').value = credentials.pass; document.getElementById('settings-modal').style.display = 'flex'; }
+        function saveSettings() {
+            const u = document.getElementById('setting-new-user').value.trim(); const p = document.getElementById('setting-new-pass').value.trim();
+            if(u === "" || p === "") { alert("لا يمكن ترك الحقول فارغة!"); return; }
+            credentials = { user: u, pass: p }; localStorage.setItem('nursery_credentials_v1', JSON.stringify(credentials));
+            alert("تم حفظ بيانات الدخول الجديدة بنجاح."); closeModal('settings-modal');
+        }
+
+        function toggleMenu() {
+            const menu = document.getElementById('side-menu'); const overlay = document.getElementById('menu-overlay');
+            if(menu.classList.contains('open')) { menu.classList.remove('open'); overlay.style.display = 'none'; } 
+            else { menu.classList.add('open'); overlay.style.display = 'block'; }
+        }
+
+        // ================= تهيئة البيانات مع Firebase =================
+        function initApp() {
+            // 1. تحميل سريع من الهاتف
+            let saved = localStorage.getItem('nursery_app_data_v3');
+            if (saved) { appData = JSON.parse(saved); if(!appData.activityLog) appData.activityLog = []; } 
+            else {
+                const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"];
+                const d = new Date(); let defaultId = 'm_' + Date.now();
+                appData = { months: [{id: defaultId, name: monthNames[d.getMonth()] + " " + d.getFullYear()}], activeMonthId: defaultId, transactions: { [defaultId]: [] }, sectionNotes: { [defaultId]: {} }, activityLog: [] };
+                
+                // أول مرة رفع للقاعدة
+                database.ref('nurseryData').once('value').then((snapshot) => {
+                    if (!snapshot.exists()) database.ref('nurseryData').set(appData);
+                });
+            }
+            updateMonthDisplay(); initHistory(); updateUI();
+
+            // 2. الاستماع للمزامنة اللحظية من Firebase
+            database.ref('nurseryData').on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (data) {
+                    appData = data;
+                    localStorage.setItem('nursery_app_data_v3', JSON.stringify(appData));
+                    updateMonthDisplay(); updateUI();
+                    
+                    if(currentActiveSection && document.activeElement.id !== 'section-general-notes') {
+                        document.getElementById('section-general-notes').value = getActiveNotes()[currentActiveSection] || "";
+                    }
+                    document.getElementById('sync-status').innerText = "🟢 متصل ومُحدّث";
+                }
+            });
+        }
+
+        function saveAppData() {
+            try { localStorage.setItem('nursery_app_data_v3', JSON.stringify(appData)); } catch(e) {}
+            // المزامنة مع Firebase
+            document.getElementById('sync-status').innerText = "⏳ جاري الرفع...";
+            database.ref('nurseryData').set(appData).then(() => {
+                document.getElementById('sync-status').innerText = "🟢 متصل ومُحدّث";
+            }).catch(err => {
+                document.getElementById('sync-status').innerText = "🔴 خطأ في الاتصال";
+                console.error("Firebase Error: ", err);
+            });
+        }
+
+        function getActiveTransactions() { if(!appData.transactions[appData.activeMonthId]) appData.transactions[appData.activeMonthId] = []; return appData.transactions[appData.activeMonthId]; }
+        function setActiveTransactions(data) { appData.transactions[appData.activeMonthId] = data; saveAppData(); }
+        function getActiveNotes() { if(!appData.sectionNotes[appData.activeMonthId]) appData.sectionNotes[appData.activeMonthId] = {}; return appData.sectionNotes[appData.activeMonthId]; }
+
+        // ================= إدارة الأشهر والسجل =================
+        function createNewMonth() {
+            let name = prompt("أدخل اسم الشهر الجديد:");
+            if (!name || name.trim() === "") return;
+            let newId = 'm_' + Date.now();
+            appData.months.push({id: newId, name: name}); appData.transactions[newId] = []; appData.sectionNotes[newId] = {}; appData.activeMonthId = newId;
+            saveAppData(); initHistory(); updateMonthDisplay(); updateUI();
+            logActivity("إضافة", `إنشاء شهر: ${name}`);
+        }
+
+        function openMonthsModal() {
+            let listEl = document.getElementById('months-list'); listEl.innerHTML = '';
+            [...appData.months].reverse().forEach(m => {
+                let isActive = m.id === appData.activeMonthId;
+                listEl.innerHTML += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; background:#f9f9f9; padding:10px 15px; border-radius:8px; border:1px solid #ddd;">
+                        <h4 style="margin:0; color: ${isActive ? 'var(--primary)' : '#333'}">${m.name} ${isActive ? '<span style="font-size:10px; color:#e74c3c;">(مفتوح)</span>' : ''}</h4>
+                        <div style="display:flex; gap: 5px;">
+                            <button class="btn-import" style="width:auto; padding:6px 10px; margin:0; background:${isActive ? '#95a5a6' : 'var(--primary)'}" ${isActive ? 'disabled' : ''} onclick="switchMonth('${m.id}')">فتح</button>
+                            <button class="btn-import" style="width:auto; padding:6px 10px; margin:0; background:var(--warning);" onclick="renameMonth('${m.id}')">✏️</button>
+                            <button class="btn-import" style="width:auto; padding:6px 10px; margin:0; background:var(--danger);" onclick="deleteMonth('${m.id}')">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('months-modal').style.display = 'flex';
+        }
+
+        function switchMonth(id) { appData.activeMonthId = id; saveAppData(); initHistory(); updateMonthDisplay(); updateUI(); if(currentActiveSection) document.getElementById('section-general-notes').value = getActiveNotes()[currentActiveSection] || ""; closeModal('months-modal'); }
+        function renameMonth(id) { let month = appData.months.find(m => m.id === id); let newName = prompt("تعديل اسم الشهر:", month.name); if (newName && newName.trim() !== "") { month.name = newName.trim(); saveAppData(); openMonthsModal(); updateMonthDisplay(); logActivity("تعديل", `تغيير اسم الشهر إلى: ${newName}`); } }
+        function deleteMonth(id) {
+            if(appData.months.length === 1) { alert("لا يمكن حذف الشهر الوحيد المتبقي!"); return; }
+            if(confirm("حذف هذا الشهر بكافة بياناته؟")) {
+                let monthName = appData.months.find(m => m.id === id).name;
+                appData.months = appData.months.filter(m => m.id !== id);
+                delete appData.transactions[id]; delete appData.sectionNotes[id];
+                if(appData.activeMonthId === id) { appData.activeMonthId = appData.months[0].id; switchMonth(appData.activeMonthId); } else { saveAppData(); openMonthsModal(); }
+                logActivity("حذف", `حذف دفتر شهر: ${monthName}`);
+            }
+        }
+        function updateMonthDisplay() { let activeMonth = appData.months.find(m => m.id === appData.activeMonthId); document.getElementById('current-month-display').innerText = activeMonth ? activeMonth.name : ""; }
+
+        document.getElementById('section-general-notes').addEventListener('input', function(e) {
+            if (currentActiveSection) {
+                let notes = getActiveNotes(); notes[currentActiveSection] = e.target.value; appData.sectionNotes[appData.activeMonthId] = notes; saveAppData();
+            }
+        });
+
+        // ================= التراجع والبحث والمودال =================
+        let historyStack = []; let currentHistoryIndex = -1;
+        function initHistory() { historyStack = [JSON.stringify(getActiveTransactions())]; currentHistoryIndex = 0; updateHistoryButtons(); }
+        function saveStateToHistory() { if (currentHistoryIndex < historyStack.length - 1) historyStack = historyStack.slice(0, currentHistoryIndex + 1); historyStack.push(JSON.stringify(getActiveTransactions())); if (historyStack.length > 100) historyStack.shift(); else currentHistoryIndex++; updateHistoryButtons(); }
+        function undo() { if (currentHistoryIndex > 0) { currentHistoryIndex--; setActiveTransactions(JSON.parse(historyStack[currentHistoryIndex])); updateUI(); updateHistoryButtons(); logActivity("تراجع", "تراجع عن خطوة."); } }
+        function redo() { if (currentHistoryIndex < historyStack.length - 1) { currentHistoryIndex++; setActiveTransactions(JSON.parse(historyStack[currentHistoryIndex])); updateUI(); updateHistoryButtons(); logActivity("إعادة", "إعادة خطوة."); } }
+        function updateHistoryButtons() { const canUndo = currentHistoryIndex > 0; const canRedo = currentHistoryIndex < historyStack.length - 1; document.getElementById('btn-undo-home').disabled = !canUndo; document.getElementById('btn-redo-home').disabled = !canRedo; document.getElementById('btn-undo-section').disabled = !canUndo; document.getElementById('btn-redo-section').disabled = !canRedo; }
+        function commitNewState() { saveStateToHistory(); updateUI(); }
+
+        function openSearchModal() { document.getElementById('search-modal').style.display = 'flex'; document.getElementById('search-input').value = ''; document.getElementById('search-results').innerHTML = '<p style="text-align:center; color:#999;">البحث متاح في جميع الدفاتر...</p>'; setTimeout(() => { document.getElementById('search-input').focus(); }, 100); }
+        function performSearch() {
+            const query = document.getElementById('search-input').value.trim().toLowerCase();
+            const res = document.getElementById('search-results'); res.innerHTML = '';
+            if (query === '') { res.innerHTML = '<p style="text-align:center; color:#999;">البحث متاح في جميع الدفاتر...</p>'; return; }
+            let count = 0;
+            appData.months.forEach(month => {
+                (appData.transactions[month.id] || []).forEach(t => {
+                    if (`${t.category} ${t.amount} ${t.date} ${t.details} ${t.notes} ${t.busId}`.toLowerCase().includes(query)) {
+                        count++; const item = document.createElement('div'); item.className = 'transaction-item'; item.style.marginBottom = '10px'; item.onclick = () => { closeModal('search-modal'); if(appData.activeMonthId !== month.id){appData.activeMonthId = month.id; saveAppData(); initHistory(); updateMonthDisplay();} openSection(t.section); setTimeout(() => openEntryModal(t.id), 300); };
+                        item.innerHTML = `<div class="transaction-info"><h4>${t.category} <span class="section-badge" style="background:${badgeColors[t.section]}">${badgeNames[t.section]}</span> <span class="section-badge" style="background:var(--dark)">${month.name}</span></h4><p>${t.date} | ${t.details}</p></div><div class="transaction-amount ${t.type==='income'?'text-success':'text-danger'}">${t.type==='income'?'+':'-'}${t.amount}</div>`;
+                        res.appendChild(item);
+                    }
+                });
+            });
+            if(count === 0) res.innerHTML = '<p style="text-align:center; color:#999;">لا توجد نتائج.</p>';
+        }
+
+        function logActivity(action, desc) { if(!appData.activityLog) appData.activityLog = []; const now = new Date(); appData.activityLog.unshift({id: Date.now(), action: action, desc: desc, time: now.toLocaleDateString('ar-EG') + " | " + now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}); if(appData.activityLog.length > 500) appData.activityLog.pop(); saveAppData(); }
+        function openLogModal() { const listEl = document.getElementById('activity-list'); listEl.innerHTML = ''; const logs = appData.activityLog || []; if(logs.length === 0) listEl.innerHTML = '<p style="text-align:center; color:#999;">لا توجد نشاطات.</p>'; else logs.forEach(log => { let bc = log.action.includes('تعديل')?'log-edit':log.action.includes('حذف')?'log-delete':log.action.includes('تراجع')?'log-undo':log.action.includes('إعادة')?'log-redo':'log-add'; listEl.innerHTML += `<div class="log-item"><span class="log-time">${log.time}</span><h4 class="log-title"><span class="log-action-badge ${bc}">${log.action}</span></h4><p style="margin:0; font-size:13px; color:#555;">${log.desc}</p></div>`; }); document.getElementById('activity-modal').style.display = 'flex'; }
+
+        // ================= إدارة العمليات والواجهة =================
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); const idVal = document.getElementById('entry-id').value; const sectionVal = form.dataset.section;
+            const now = new Date(); const tData = { id: idVal ? parseInt(idVal) : Date.now(), section: sectionVal, type: document.getElementById('type').value, category: document.getElementById('category').value, amount: parseFloat(document.getElementById('amount').value), details: document.getElementById('details').value, date: document.getElementById('date').value, time: now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}), busId: sectionsConfig[sectionVal].showBus ? document.getElementById('bus-id').value : null, notes: document.getElementById('notes').value };
+            let activeTrans = getActiveTransactions(); let actionType = "إضافة";
+            if (idVal) { activeTrans[activeTrans.findIndex(x => x.id === parseInt(idVal))] = tData; actionType = "تعديل"; } else activeTrans.push(tData);
+            setActiveTransactions(activeTrans); commitNewState(); logActivity(actionType, `(${badgeNames[sectionVal]}) ${tData.amount}ج.م | ${tData.category}`); closeModal('main-modal');
+        });
+
+        function deleteTransaction() { const id = parseInt(document.getElementById('entry-id').value); if(confirm("حذف هذه العملية؟")) { let activeTrans = getActiveTransactions(); let deleted = activeTrans.find(t => t.id === id); activeTrans = activeTrans.filter(t => t.id !== id); setActiveTransactions(activeTrans); commitNewState(); logActivity("حذف", `حذف ${deleted.amount}ج.م | ${deleted.category}`); closeModal('main-modal'); } }
+
+        function openSection(sectionKey) { currentActiveSection = sectionKey; document.getElementById('section-title').innerText = sectionsConfig[sectionKey].title; document.getElementById('section-list-title').innerText = "سجل حركات ( " + sectionsConfig[sectionKey].title.split(' ')[1] + " )"; document.getElementById('add-new-btn').style.backgroundColor = badgeColors[sectionKey]; document.getElementById('section-general-notes').value = getActiveNotes()[sectionKey] || ""; updateUI(); homeScreen.classList.add('hidden'); sectionScreen.classList.remove('hidden'); }
+        function goHome() { currentActiveSection = null; updateUI(); sectionScreen.classList.add('hidden'); homeScreen.classList.remove('hidden'); }
+
+        function updateUI() {
+            let activeTrans = getActiveTransactions(); renderList(activeTrans, 'overall-list'); updateDashboard(activeTrans, 'overall');
+            if (currentActiveSection) { renderList(activeTrans.filter(t => t.section === currentActiveSection), 'section-list'); updateDashboard(activeTrans.filter(t => t.section === currentActiveSection), 'section'); }
+        }
+        function updateDashboard(list, prefix) { let inc = 0, exp = 0; list.forEach(t => t.type === 'income' ? inc += t.amount : exp += t.amount); document.getElementById(`${prefix}-income`).textContent = inc.toLocaleString() + ' ج.م'; document.getElementById(`${prefix}-expense`).textContent = exp.toLocaleString() + ' ج.م'; document.getElementById(`${prefix}-net`).textContent = (inc - exp).toLocaleString() + ' ج.م'; }
+        function renderList(list, containerId) {
+            const container = document.getElementById(containerId); container.innerHTML = '';
+            if(list.length === 0) { container.innerHTML = '<p style="text-align:center; color:#999;">لا توجد حركات.</p>'; return; }
+            list.slice().reverse().forEach(t => {
+                const item = document.createElement('div'); item.className = 'transaction-item'; item.onclick = () => openEntryModal(t.id, t.section);
+                item.innerHTML = `<div class="transaction-info"><h4>${t.category} ${t.busId ? `<span class="bus-tag">${t.busId}</span>`:''} ${containerId === 'overall-list' ? `<span class="section-badge" style="background:${badgeColors[t.section]}">${badgeNames[t.section]}</span>`:''}</h4><p>${t.date} | ⏱️ ${t.time || ''} | ${t.details} ${(t.notes&&t.notes.trim()!=='')?'📝':''}</p></div><div class="transaction-amount ${t.type==='income'?'text-success':'text-danger'}">${t.type==='income'?'+':'-'}${t.amount}</div>`;
+                container.appendChild(item);
+            });
+        }
+
+        function openEntryModal(tId = null, overrideS = null) {
+            const tSec = overrideS || currentActiveSection; const config = sectionsConfig[tSec];
+            document.getElementById('modal-title').innerText = tId ? "تعديل العملية" : "إضافة حركة جديدة"; document.getElementById('details-label').innerText = config.detailsLabel; document.getElementById('bus-select-group').style.display = config.showBus ? 'block' : 'none';
+            const tSel = document.getElementById('type'); tSel.innerHTML = ''; config.types.forEach(t => tSel.innerHTML += `<option value="${t.val}">${t.text}</option>`);
+            form.dataset.section = tSec; populateCategories(tSec);
+            if (tId) { const t = getActiveTransactions().find(x => x.id === tId); document.getElementById('entry-id').value = t.id; let tVal = t.type; if(tSec==='bus'&&tVal==='expense'&&!config.types.find(x=>x.val==='expense')) tVal='expense_monthly'; document.getElementById('type').value = tVal; populateCategories(tSec); document.getElementById('category').value = t.category; document.getElementById('amount').value = t.amount; document.getElementById('details').value = t.details; document.getElementById('date').value = t.date; if(t.busId) document.getElementById('bus-id').value = t.busId; document.getElementById('notes').value = t.notes || ''; document.getElementById('save-btn').innerText = "تحديث العملية"; document.getElementById('delete-btn').style.display = "block"; } 
+            else { document.getElementById('entry-id').value = ""; document.getElementById('amount').value = ""; document.getElementById('details').value = ""; document.getElementById('notes').value = ""; document.getElementById('date').valueAsDate = new Date(); document.getElementById('save-btn').innerText = "حفظ العملية"; document.getElementById('delete-btn').style.display = "none"; }
+            document.getElementById('main-modal').style.display = 'flex';
+        }
+
+        function populateCategories(sKey = null) { const tSec = sKey || form.dataset.section; const tType = document.getElementById('type').value; const cSel = document.getElementById('category'); cSel.innerHTML = ''; (sectionsConfig[tSec].categories[tType] || []).forEach(cat => cSel.innerHTML += `<option value="${cat}">${cat}</option>`); }
+        function closeModal(mId) { document.getElementById(mId).style.display = 'none'; }
+        window.onclick = function(e) { if(e.target.classList.contains('modal')) e.target.style.display = 'none'; }
+
+        // ================= الميكروفون =================
+        let micRec = null, curMic = null, micInit = false;
+        function initMic() {
+            if(micInit) return true;
+            if('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                micRec = new SpeechRecognition(); micRec.lang = 'ar-EG'; micRec.interimResults = false; micRec.maxAlternatives = 1;
+                micRec.onstart = () => { if(curMic) document.getElementById('mic-'+curMic).classList.add('recording'); };
+                micRec.onresult = (e) => {
+                    if(curMic) {
+                        const res = e.results[0][0].transcript; const field = document.getElementById(curMic);
+                        if((curMic==='notes'||curMic==='section-general-notes') && field.value.trim()!=='') field.value += ' ' + res; else field.value = res;
+                        field.dispatchEvent(new Event('input'));
+                    }
+                };
+                micRec.onerror = () => alert("تأكد من إعطاء متصفح جوجل كروم صلاحية الميكروفون من إعدادات الموقع.");
+                micRec.onend = () => { if(curMic) { document.getElementById('mic-'+curMic).classList.remove('recording'); curMic = null; } };
+                micInit = true; return true;
+            }
+            alert("استخدم متصفح Google Chrome لتعمل خاصية الصوت."); return false;
+        }
+        function startVoiceRecognition(id) { if(!initMic() || !micRec) return; curMic = id; try{micRec.start();}catch(e){} }
+
+        // ================= التصدير والاستيراد =================
+        function openBackupModal() { document.getElementById('backup-modal').style.display = 'flex'; }
+        function exportPDF() { let list = getActiveTransactions(); if(list.length===0){alert("لا بيانات!");return;} closeModal('backup-modal'); let mName = appData.months.find(m=>m.id===appData.activeMonthId)?.name||""; let html = `<div style="text-align:center;margin-bottom:20px;"><h2 style="color:#2c3e50;border-bottom:2px solid #3498db;padding-bottom:10px;display:inline-block;">التقرير المالي - ${mName}</h2></div><table style="width:100%;border-collapse:collapse;font-size:14px;text-align:right;" dir="rtl"><thead><tr style="background-color:#3498db;color:white;"><th style="border:1px solid #ddd;padding:10px;">التاريخ والوقت</th><th style="border:1px solid #ddd;padding:10px;">القسم</th><th style="border:1px solid #ddd;padding:10px;">البند</th><th style="border:1px solid #ddd;padding:10px;">التفاصيل</th><th style="border:1px solid #ddd;padding:10px;">النوع</th><th style="border:1px solid #ddd;padding:10px;">المبلغ</th></tr></thead><tbody>`; list.slice().reverse().forEach(t=>{ let col = t.type==='income'?'color:#2ecc71;font-weight:bold;':'color:#e74c3c;font-weight:bold;'; html+=`<tr><td style="border:1px solid #ddd;padding:10px;">${t.date} <br><span style="font-size:10px;color:#555;">${t.time||''}</span></td><td style="border:1px solid #ddd;padding:10px;">${badgeNames[t.section]||'عام'}</td><td style="border:1px solid #ddd;padding:10px;">${t.category}</td><td style="border:1px solid #ddd;padding:10px;">${t.details}</td><td style="border:1px solid #ddd;padding:10px;${col}">${t.type==='income'?'إيراد':'مصروف'}</td><td style="border:1px solid #ddd;padding:10px;${col}">${t.type==='income'?'+':'-'}${t.amount} ج.م</td></tr>`; }); html+=`</tbody></table><div style="text-align:center;margin-top:30px;font-size:12px;color:#777;">نظام إدارة أكاديمية أطفال المستقبل</div>`; document.getElementById('print-area').innerHTML=html; setTimeout(()=>window.print(),500); }
+        function exportNotes() { let list = getActiveTransactions(); if(list.length===0){alert("لا بيانات!");return;} let mName = appData.months.find(m=>m.id===appData.activeMonthId)?.name||""; let txt = `بسم الله الرحمن الرحيم\nتقرير شهر: ${mName}\n=================================\n\n`; list.slice().reverse().forEach(t=>{ txt+=`التاريخ والوقت: ${t.date} ${t.time||''}\nالقسم: ${badgeNames[t.section]||'عام'}\nالبند: ${t.category}\nالمبلغ: ${t.type==='income'?'+':'-'}${t.amount} ج.م\nالتفاصيل: ${t.details}\n---------------------------------\n`; }); downloadFile(txt, `Nursery_Report_${mName}.txt`, "text/plain"); }
+        function exportExcel() { let list = getActiveTransactions(); if(list.length===0){alert("لا بيانات!");return;} let mName = appData.months.find(m=>m.id===appData.activeMonthId)?.name||""; let csv = "\uFEFFالتاريخ,الوقت,القسم,النوع,البند,المبلغ,التفاصيل,الملاحظات\n"; list.slice().reverse().forEach(t=>{ csv+=`${t.date},${t.time||''},${badgeNames[t.section]||'عام'},${t.type==='income'?'إيراد':'مصروف'},${t.category},${t.amount},${(t.details||'').replace(/,/g,'،')},${(t.notes||'').replace(/,/g,'،').replace(/\n/g,' ')}\n`; }); downloadFile(csv, `Nursery_Excel_${mName}.csv`, "text/csv"); }
+        function exportJSON() { if(appData.months.length===0){alert("لا بيانات!");return;} downloadFile(JSON.stringify(appData), "Nursery_FullSystem_Backup.json", "application/json"); }
+        function downloadFile(content, fileName, mimeType) { const blob = new Blob([content], {type: mimeType+";charset=utf-8;"}); const link = document.createElement("a"); if(navigator.msSaveBlob){navigator.msSaveBlob(blob,fileName);}else{link.href=URL.createObjectURL(blob);link.download=fileName;link.style.display='none';document.body.appendChild(link);link.click();document.body.removeChild(link);} }
+        function importJSON() { const file = document.getElementById('import-file').files[0]; if(!file){alert("اختر ملف!");return;} const reader = new FileReader(); reader.onload=function(e){try{const data=JSON.parse(e.target.result);if(data&&data.months&&data.transactions){if(confirm("سيتم استبدال كل البيانات. موافق؟")){appData=data;saveAppData();alert("تم الاسترجاع!");window.location.reload();}}else{alert("ملف غير صالح.");}}catch(err){alert("خطأ بالقراءة.");}}; reader.readAsText(file); }
+    </script>
+</body>
+</html>
