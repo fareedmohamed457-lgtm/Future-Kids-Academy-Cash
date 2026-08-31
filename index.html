@@ -21,8 +21,8 @@
         .login-box { background: #fff; padding: 30px; border-radius: 15px; width: 85%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
         .login-box input { margin-bottom: 15px; text-align: center; }
 
-        .header-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 12px; margin-bottom: 8px; }
-        .menu-btn, .search-btn { background: #fff; border-radius: 50%; width: 38px; height: 38px; font-size: 16px; cursor: pointer; color: var(--dark); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee; transition: 0.2s; }
+        .header-controls { display: flex; justify-content: center; align-items: center; gap: 15px; margin-top: 10px; margin-bottom: 10px; }
+        .menu-btn, .search-btn { position: static !important; background: #fff; border-radius: 50%; width: 38px; height: 38px; font-size: 16px; cursor: pointer; color: var(--dark); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #eee; transition: 0.2s; }
         .menu-btn:hover, .search-btn:hover { background: var(--primary); color: #fff; }
 
         .side-menu { position: fixed; right: -280px; top: 0; width: 260px; height: 100%; background: #fff; box-shadow: -2px 0 10px rgba(0,0,0,0.2); transition: right 0.3s ease; z-index: 1001; padding-top: 60px; }
@@ -31,17 +31,17 @@
         .side-menu a:hover { background-color: #f8f9fa; color: var(--primary); }
         .menu-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 1000; }
 
-        .app-header { position: relative; text-align: center; margin: 10px 0 15px; padding-bottom: 22px; border-bottom: 2px dashed #ddd; }
+        .app-header { text-align: center; margin: 10px 0 15px; padding-bottom: 22px; border-bottom: 2px dashed #ddd; position: relative; }
         @keyframes glowing-text { 0% { color: #e74c3c; text-shadow: 0 0 5px rgba(231,76,60,0.5); } 25% { color: #f39c12; text-shadow: 0 0 5px rgba(243,156,18,0.5); } 50% { color: #3498db; text-shadow: 0 0 5px rgba(52,152,219,0.5); } 75% { color: #9b59b6; text-shadow: 0 0 5px rgba(155,89,182,0.5); } 100% { color: #2ecc71; text-shadow: 0 0 5px rgba(46,204,113,0.5); } }
-        .animated-title { font-size: 28px; font-weight: 900; margin: 0; text-transform: uppercase; font-family: 'Arial Black', Impact, sans-serif; animation: glowing-text 5s infinite alternate; letter-spacing: 1px; }
-        .main-subtitle { color: var(--dark); font-size: 15px; font-weight: bold; margin-top: 5px; }
+        .animated-title { font-size: 26px; font-weight: 900; margin: 0; text-transform: uppercase; font-family: 'Arial Black', Impact, sans-serif; animation: glowing-text 5s infinite alternate; letter-spacing: 1px; }
+        .main-subtitle { color: var(--dark); font-size: 14px; font-weight: bold; margin-top: 5px; }
         .developer-credit { position: absolute; left: 5px; bottom: 2px; font-size: 11px; font-family: 'Segoe UI', Tahoma, sans-serif; font-weight: bold; direction: ltr; animation: glowing-text 4s infinite alternate-reverse; }
         
         .month-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; padding: 10px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 15px; }
         .month-bar h3 { margin: 0; font-size: 16px; color: var(--primary); font-weight: bold; }
         .month-btn { background: var(--dark); color: white; border: none; padding: 8px 12px; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 13px; }
         .month-btn-add { background: var(--success); }
-        .sync-indicator { font-size: 10px; color: #2ecc71; display: block; text-align: center; margin-top: 5px; }
+        .sync-indicator { font-size: 11px; font-weight: bold; color: #e74c3c; display: block; text-align: center; margin-top: 5px; }
 
         .dashboard { display: flex; gap: 8px; margin-bottom: 20px; }
         .card { flex: 1; background: #fff; padding: 12px 5px; border-radius: 12px; text-align: center; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
@@ -138,7 +138,7 @@
                 <div class="search-btn" onclick="openSearchModal()" title="البحث الشامل">🔍</div>
                 <div class="menu-btn" onclick="toggleMenu()" title="القائمة">☰</div>
             </div>
-            <h1 class="animated-title">Future Kids Academy</h1>
+            <h1 class="animated-title">FUTURE KIDS ACADEMY</h1>
             <div class="main-subtitle">نظام إدارة الماليات الذكي</div>
             <span class="developer-credit animated-credit">made by Eng / Fareed Mohamed</span>
         </header>
@@ -147,7 +147,7 @@
             <button class="month-btn" onclick="openMonthsModal()">📅 الأرشيف</button>
             <div>
                 <h3 id="current-month-display">الشهر الحالي</h3>
-                <span class="sync-indicator" id="sync-status">⏳ جاري الاتصال...</span>
+                <span class="sync-indicator" id="sync-status">جاري التهيئة...</span>
             </div>
             <button class="month-btn month-btn-add" onclick="createNewMonth()">➕ شهر جديد</button>
         </div>
@@ -212,7 +212,7 @@
         </div>
     </div>
 
-    <!-- النوافذ المنبثقة المتعددة -->
+    <!-- النوافذ المنبثقة -->
     <div id="main-modal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal('main-modal')">&times;</span>
@@ -302,23 +302,29 @@
         </div>
     </div>
 
-    <!-- البرمجة -->
+    <!-- البرمجة السليمة والمحمية -->
     <script>
-        // ================= تهيئة Firebase =================
+        // ================= تهيئة Firebase المضادة للأعطال =================
         const firebaseConfig = {
             apiKey: "AIzaSyAAsQuny3_PkeGPgvNCyFlOYWKYiABHjjc",
             authDomain: "fka-cash.firebaseapp.com",
-            databaseURL: "https://fka-cash-default-rtdb.firebaseio.com", // 🟢 تم إضافة الرابط هنا
+            databaseURL: "https://fka-cash-default-rtdb.europe-west1.firebasedatabase.app", // الرابط الصحيح المتوقع
             projectId: "fka-cash",
             storageBucket: "fka-cash.firebasestorage.app",
             messagingSenderId: "643159973835",
             appId: "1:643159973835:web:7664d62a7e33463ac4e04e",
             measurementId: "G-C6D24L7XY9"
         };
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        
+        let database = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+        } catch (error) {
+            console.error("Firebase Init Error:", error);
+        }
 
-        // ================= المتغيرات والأقسام =================
+        // ================= المتغيرات =================
         let appData = { months: [], activeMonthId: null, transactions: {}, sectionNotes: {}, activityLog: [] };
         let currentActiveSection = null;
         let credentials = JSON.parse(localStorage.getItem('nursery_credentials_v1')) || { user: 'asho', pass: 'asho' };
@@ -333,10 +339,8 @@
         };
         const badgeColors = { child: 'var(--primary)', bus: 'var(--warning)', consumable: 'var(--danger)', general: 'var(--purple)', book: 'var(--info)', uniform: 'var(--uniform)' };
         const badgeNames = { child: 'الاطفال', bus: 'الباصات', consumable: 'الاستهلاكات', general: 'عام', book: 'الكتب', uniform: 'الزي' };
-
         const form = document.getElementById('finance-form');
 
-        // ================= الدخول والمزامنة =================
         window.onload = function() {
             if(sessionStorage.getItem('nursery_logged_in') === 'true') {
                 document.getElementById('login-screen').style.display = 'none';
@@ -357,7 +361,6 @@
         }
 
         function logout() { sessionStorage.removeItem('nursery_logged_in'); window.location.reload(); }
-
         function openSettingsModal() { document.getElementById('setting-new-user').value = credentials.user; document.getElementById('setting-new-pass').value = credentials.pass; document.getElementById('settings-modal').style.display = 'flex'; }
         function saveSettings() {
             const u = document.getElementById('setting-new-user').value.trim(); const p = document.getElementById('setting-new-pass').value.trim();
@@ -372,9 +375,7 @@
             else { menu.classList.add('open'); overlay.style.display = 'block'; }
         }
 
-        // ================= تهيئة البيانات مع Firebase =================
         function initApp() {
-            // 1. تحميل سريع من الهاتف
             let saved = localStorage.getItem('nursery_app_data_v3');
             if (saved) { appData = JSON.parse(saved); if(!appData.activityLog) appData.activityLog = []; } 
             else {
@@ -382,46 +383,62 @@
                 const d = new Date(); let defaultId = 'm_' + Date.now();
                 appData = { months: [{id: defaultId, name: monthNames[d.getMonth()] + " " + d.getFullYear()}], activeMonthId: defaultId, transactions: { [defaultId]: [] }, sectionNotes: { [defaultId]: {} }, activityLog: [] };
                 
-                // أول مرة رفع للقاعدة
-                database.ref('nurseryData').once('value').then((snapshot) => {
-                    if (!snapshot.exists()) database.ref('nurseryData').set(appData);
-                });
+                if (database) {
+                    try {
+                        database.ref('nurseryData').once('value').then((snapshot) => {
+                            if (!snapshot.exists()) database.ref('nurseryData').set(appData);
+                        }).catch(e => console.log(e));
+                    } catch(e) {}
+                }
             }
             updateMonthDisplay(); initHistory(); updateUI();
 
-            // 2. الاستماع للمزامنة اللحظية من Firebase
-            database.ref('nurseryData').on('value', (snapshot) => {
-                const data = snapshot.val();
-                if (data) {
-                    appData = data;
-                    localStorage.setItem('nursery_app_data_v3', JSON.stringify(appData));
-                    updateMonthDisplay(); updateUI();
-                    
-                    if(currentActiveSection && document.activeElement.id !== 'section-general-notes') {
-                        document.getElementById('section-general-notes').value = getActiveNotes()[currentActiveSection] || "";
-                    }
-                    document.getElementById('sync-status').innerText = "🟢 متصل ومُحدّث";
+            if (database) {
+                try {
+                    database.ref('nurseryData').on('value', (snapshot) => {
+                        const data = snapshot.val();
+                        if (data) {
+                            appData = data;
+                            localStorage.setItem('nursery_app_data_v3', JSON.stringify(appData));
+                            updateMonthDisplay(); updateUI();
+                            if(currentActiveSection && document.activeElement.id !== 'section-general-notes') {
+                                document.getElementById('section-general-notes').value = getActiveNotes()[currentActiveSection] || "";
+                            }
+                            document.getElementById('sync-status').innerText = "🟢 متصل بالسحابة";
+                            document.getElementById('sync-status').style.color = "#2ecc71";
+                        }
+                    });
+                } catch(e) {
+                    document.getElementById('sync-status').innerText = "🔴 تعمل أوفلاين";
+                    document.getElementById('sync-status').style.color = "#e74c3c";
                 }
-            });
+            } else {
+                document.getElementById('sync-status').innerText = "🔴 تعمل أوفلاين";
+                document.getElementById('sync-status').style.color = "#e74c3c";
+            }
         }
 
         function saveAppData() {
             try { localStorage.setItem('nursery_app_data_v3', JSON.stringify(appData)); } catch(e) {}
-            // المزامنة مع Firebase
-            document.getElementById('sync-status').innerText = "⏳ جاري الرفع...";
-            database.ref('nurseryData').set(appData).then(() => {
-                document.getElementById('sync-status').innerText = "🟢 متصل ومُحدّث";
-            }).catch(err => {
-                document.getElementById('sync-status').innerText = "🔴 خطأ في الاتصال";
-                console.error("Firebase Error: ", err);
-            });
+            if (database) {
+                document.getElementById('sync-status').innerText = "⏳ جاري الرفع...";
+                document.getElementById('sync-status').style.color = "#f39c12";
+                try {
+                    database.ref('nurseryData').set(appData).then(() => {
+                        document.getElementById('sync-status').innerText = "🟢 متصل بالسحابة";
+                        document.getElementById('sync-status').style.color = "#2ecc71";
+                    }).catch(err => {
+                        document.getElementById('sync-status').innerText = "🔴 خطأ بالاتصال";
+                        document.getElementById('sync-status').style.color = "#e74c3c";
+                    });
+                } catch(e) {}
+            }
         }
 
         function getActiveTransactions() { if(!appData.transactions[appData.activeMonthId]) appData.transactions[appData.activeMonthId] = []; return appData.transactions[appData.activeMonthId]; }
         function setActiveTransactions(data) { appData.transactions[appData.activeMonthId] = data; saveAppData(); }
         function getActiveNotes() { if(!appData.sectionNotes[appData.activeMonthId]) appData.sectionNotes[appData.activeMonthId] = {}; return appData.sectionNotes[appData.activeMonthId]; }
 
-        // ================= إدارة الأشهر والسجل =================
         function createNewMonth() {
             let name = prompt("أدخل اسم الشهر الجديد:");
             if (!name || name.trim() === "") return;
@@ -469,7 +486,6 @@
             }
         });
 
-        // ================= التراجع والبحث والمودال =================
         let historyStack = []; let currentHistoryIndex = -1;
         function initHistory() { historyStack = [JSON.stringify(getActiveTransactions())]; currentHistoryIndex = 0; updateHistoryButtons(); }
         function saveStateToHistory() { if (currentHistoryIndex < historyStack.length - 1) historyStack = historyStack.slice(0, currentHistoryIndex + 1); historyStack.push(JSON.stringify(getActiveTransactions())); if (historyStack.length > 100) historyStack.shift(); else currentHistoryIndex++; updateHistoryButtons(); }
@@ -499,7 +515,6 @@
         function logActivity(action, desc) { if(!appData.activityLog) appData.activityLog = []; const now = new Date(); appData.activityLog.unshift({id: Date.now(), action: action, desc: desc, time: now.toLocaleDateString('ar-EG') + " | " + now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'})}); if(appData.activityLog.length > 500) appData.activityLog.pop(); saveAppData(); }
         function openLogModal() { const listEl = document.getElementById('activity-list'); listEl.innerHTML = ''; const logs = appData.activityLog || []; if(logs.length === 0) listEl.innerHTML = '<p style="text-align:center; color:#999;">لا توجد نشاطات.</p>'; else logs.forEach(log => { let bc = log.action.includes('تعديل')?'log-edit':log.action.includes('حذف')?'log-delete':log.action.includes('تراجع')?'log-undo':log.action.includes('إعادة')?'log-redo':'log-add'; listEl.innerHTML += `<div class="log-item"><span class="log-time">${log.time}</span><h4 class="log-title"><span class="log-action-badge ${bc}">${log.action}</span></h4><p style="margin:0; font-size:13px; color:#555;">${log.desc}</p></div>`; }); document.getElementById('activity-modal').style.display = 'flex'; }
 
-        // ================= إدارة العمليات والواجهة =================
         form.addEventListener('submit', function(e) {
             e.preventDefault(); const idVal = document.getElementById('entry-id').value; const sectionVal = form.dataset.section;
             const now = new Date(); const tData = { id: idVal ? parseInt(idVal) : Date.now(), section: sectionVal, type: document.getElementById('type').value, category: document.getElementById('category').value, amount: parseFloat(document.getElementById('amount').value), details: document.getElementById('details').value, date: document.getElementById('date').value, time: now.toLocaleTimeString('ar-EG', {hour:'2-digit', minute:'2-digit'}), busId: sectionsConfig[sectionVal].showBus ? document.getElementById('bus-id').value : null, notes: document.getElementById('notes').value };
@@ -557,7 +572,7 @@
                         field.dispatchEvent(new Event('input'));
                     }
                 };
-                micRec.onerror = () => alert("تأكد من إعطاء متصفح جوجل كروم صلاحية الميكروفون من إعدادات الموقع.");
+                micRec.onerror = () => alert("تأكد من إعطاء متصفح جوجل كروم صلاحية الميكروفون.");
                 micRec.onend = () => { if(curMic) { document.getElementById('mic-'+curMic).classList.remove('recording'); curMic = null; } };
                 micInit = true; return true;
             }
